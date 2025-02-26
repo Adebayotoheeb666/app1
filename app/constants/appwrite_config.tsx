@@ -1,8 +1,7 @@
 "use client";
 
-import { Client, Account, Models, ID, Databases, Storage, OAuthProvider } from "appwrite";
+import { Client, Account, Models, ID, Databases, Storage, OAuthProvider, Permission, Role } from "appwrite";
 import { User } from "./interface";
-import { Client, Databases, Permission, Role } from "node-appwrite";
 
 interface Sponsors {
   id: number;
