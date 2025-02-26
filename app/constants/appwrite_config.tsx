@@ -1,6 +1,6 @@
 "use client";
 
-import { Client, Account, Models, ID, Databases, Storage } from "appwrite";
+import { Client, Account, Models, ID, Databases, Storage, OAuthProvider } from "appwrite";
 import { User } from "./interface";
 import sdk, { Permission, Role } from "node-appwrite";
 
@@ -30,7 +30,7 @@ class ServerConfig {
         Permission.create(Role.any()), // Admins can update this document
         Permission.delete(Role.any()), // Admins can delete this document
       ])
-      .then((res) => {
+      .then((res: any) => {
         this.databases.createStringAttribute(this.regDb, id, "name", 50, false);
         this.databases.createStringAttribute(this.regDb, id, "email", 50, false);
         this.databases.createStringAttribute(this.regDb, id, "confirm", 50, false, "");
@@ -46,13 +46,13 @@ class ServerConfig {
         Permission.create(Role.user(user)), // Admins can update this document
         Permission.delete(Role.user(user)), // Admins can delete this document
       ])
-      .then((res) => {
+      .then((res: any) => {
         this.databases
           .createStringAttribute(this.sponDb, id, "name", 50, false)
-          .then((res) => {
+          .then((res: any) => {
             this.databases
               .createStringAttribute(this.sponDb, id, "url", 50, false)
-              .then((res) => {
+              .then((res: any) => {
                 for (var i = 0; i < sponsor.length; i++) {
                   this.databases.createDocument(this.sponDb, id, ID.unique(), {
                     name: sponsor[i].name,
@@ -124,7 +124,7 @@ class AppwriteConfig {
   }
 
   emailLogin(email: string, password: string): Promise<Models.Session> {
-    return this.account.createEmailSession(email, password);
+    return this.account.createSession(email, password);
   }
 
   signOut(id: string): boolean {
