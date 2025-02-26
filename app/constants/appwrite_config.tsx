@@ -84,33 +84,20 @@ class AppwriteConfig {
       .setProject('67bc5bff000fff8525c2');
   }
 
-  googlelog(): void {
-    try {
-      const promise = this.account.createOAuth2Session(
-        "google",
-        `${process.env.NEXT_PUBLIC_APPURL}/login/sucess`,
-        `${process.env.NEXT_PUBLIC_APPURL}/login/failure`,
-        []
-      );
-      this.getCurUser();
-    } catch (error) {
-      console.log(error);
+  githublog(): void {
+  try {
+    this.account.createOAuth2Session(
+      OAuthProvider.Github, // Use OAuthProvider.Github instead of "github"
+      `${process.env.NEXT_PUBLIC_APPURL}/login/success`,
+      `${process.env.NEXT_PUBLIC_APPURL}/login/failure`
+    );
+    this.getCurUser();
+  } catch (error) {
+    console.log(error);
     }
   }
 
-  githublog(): void {
-    try {
-      this.account.createOAuth2Session(
-        "github",
-        `${process.env.NEXT_PUBLIC_APPURL}/login/sucess`,
-        `${process.env.NEXT_PUBLIC_APPURL}/login/failure`,
-        []
-      );
-      this.getCurUser();
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  
 
   getCurUser(): void {
     try {
@@ -151,7 +138,7 @@ class AppwriteConfig {
   }
 
   magicUrlLogin(email: string): void {
-    this.account.createMagicURLSession(
+    this.account.createMagicURLToken(
       ID.unique(),
       email,
       `${process.env.NEXT_PUBLIC_APPURL}/login/sucess`
