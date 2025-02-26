@@ -2,7 +2,7 @@
 
 import { Client, Account, Models, ID, Databases, Storage, OAuthProvider } from "appwrite";
 import { User } from "./interface";
-import sdk, { Permission, Role } from "node-appwrite";
+import { Client, Databases, Permission, Role } from "node-appwrite";
 
 interface Sponsors {
   id: number;
@@ -10,10 +10,10 @@ interface Sponsors {
   url: string;
 }
 class ServerConfig {
-  client: sdk.Client = new sdk.Client();
+  client: const client = new Client();
   regDb: string = `${process.env.NEXT_PUBLIC_REGDB}`;
   sponDb: string = `${process.env.NEXT_PUBLIC_SPODB}`;
-  databases: sdk.Databases = new sdk.Databases(this.client);
+  databases: const databases = new Databases(this client);
 
   constructor() {
     this.client
