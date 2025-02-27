@@ -8,144 +8,135 @@ interface Sponsors {
   name: string;
   url: string;
 }
+
 class ServerConfig {
-  client: const client = new Client();
-  regDb: string = `${process.env.NEXT_PUBLIC_REGDB}`;
-  sponDb: string = `${process.env.NEXT_PUBLIC_SPODB}`;
-  databases: const databases = new Databases(this client);
+  client: Client = new Client();
+  regDb: string = process.env.NEXT_PUBLIC_REGDB || "";
+  sponDb: string = process.env.NEXT_PUBLIC_SPODB || "";
+  databases: Databases = new Databases(this.client);
 
   constructor() {
     this.client
-      .setEndpoint(`${process.env.NEXT_PUBLIC_ENDPOINT}`)
-      .setProject(`${process.env.NEXT_PUBLIC_PROJECTID}`)
-      .setKey(`${process.env.NEXT_PUBLIC_DBKEY}`);
+      .setEndpoint(process.env.NEXT_PUBLIC_ENDPOINT || "")
+      .setProject(process.env.NEXT_PUBLIC_PROJECTID || "");
   }
 
-  createRegColl(id: string, name: string) {
-    this.databases
-      .createCollection(this.regDb, id, name, [
-        Permission.read(Role.any()), // Anyone can view this document
-        Permission.update(Role.any()), // Writers can update this document
-        Permission.create(Role.any()), // Admins can update this document
-        Permission.delete(Role.any()), // Admins can delete this document
-      ])
-      .then((res: any) => {
-        this.databases.createStringAttribute(this.regDb, id, "name", 50, false);
-        this.databases.createStringAttribute(this.regDb, id, "email", 50, false);
-        this.databases.createStringAttribute(this.regDb, id, "confirm", 50, false, "");
-        
-      });
+  async createRegColl(id: string, name: string): Promise<void> {
+    try {
+      await this.databases.createCollection(this.regDb, id, name, [
+        Permission.read(Role.any()),
+        Permission.update(Role.any()),
+        Permission.create(Role.any()),
+        Permission.delete(Role.any()),
+      ]);
+
+      await this.databases.createStringAttribute(this.regDb, id, "name", 50, false);
+      await this.databases.createStringAttribute(this.regDb, id, "email", 50, false);
+      await this.databases.createStringAttribute(this.regDb, id, "confirm", 50, false, "");
+    } catch (error) {
+      console.error("Error creating registration collection:", error);
+    }
   }
 
-  createSponColl(id: string, name: string, sponsor: Sponsors[], user:string) {
-    this.databases
-      .createCollection(this.sponDb, id, name, [
-        Permission.read(Role.any()), // Anyone can view this document
-        Permission.update(Role.user(user)), // Writers can update this document
-        Permission.create(Role.user(user)), // Admins can update this document
-        Permission.delete(Role.user(user)), // Admins can delete this document
-      ])
-      .then((res: any) => {
-        this.databases
-          .createStringAttribute(this.sponDb, id, "name", 50, false)
-          .then((res: any) => {
-            this.databases
-              .createStringAttribute(this.sponDb, id, "url", 50, false)
-              .then((res: any) => {
-                for (var i = 0; i < sponsor.length; i++) {
-                  this.databases.createDocument(this.sponDb, id, ID.unique(), {
-                    name: sponsor[i].name,
-                    url: sponsor[i].url,
-                  });
-                }
-              });
-          });
-      });
+  async createSponColl(id: string, name: string, sponsors: Sponsors[], user: string): Promise<void> {
+    try {
+      await this.databases.createCollection(this.sponDb, id, name, [
+        Permission.read(Role.any()),
+        Permission.update(Role.user(user)),
+        Permission.create(Role.user(user)),
+        Permission.delete(Role.user(user)),
+      ]);
+
+      await this.databases.createStringAttribute(this.sponDb, id, "name", 50, false);
+      await this.databases.createStringAttribute(this.sponDb, id, "url", 50, false);
+
+      for (const sponsor of sponsors) {
+        await this.databases.createDocument(this.sponDb, id, ID.unique(), {
+          name: sponsor.name,
+          url: sponsor.url,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating sponsor collection:", error);
+    }
   }
 }
 
 class AppwriteConfig {
-  databaseId: string = `${process.env.NEXT_PUBLIC_DATABASEID}`;
-  activeCollId: string = `${process.env.NEXT_PUBLIC_EVENT_COLLID}`;
-  bannerBucketId: string = `${process.env.NEXT_PUBLIC_EVENTBUCKET}`;
-  regDbId: string = `${process.env.NEXT_PUBLIC_REGDB}`;
+  databaseId: string = process.env.NEXT_PUBLIC_DATABASEID || "";
+  activeCollId: string = process.env.NEXT_PUBLIC_EVENT_COLLID || "";
+  bannerBucketId: string = process.env.NEXT_PUBLIC_EVENTBUCKET || "";
+  regDbId: string = process.env.NEXT_PUBLIC_REGDB || "";
 
   client: Client = new Client();
   account: Account = new Account(this.client);
   databases: Databases = new Databases(this.client);
-  regDb: Databases = new Databases(this.client);
   storage: Storage = new Storage(this.client);
   user: User = {} as User;
 
   constructor() {
-    this.client
-      .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject('67bc5bff000fff8525c2');
+    this.client.setEndpoint("https://cloud.appwrite.io/v1").setProject("67bc5bff000fff8525c2");
   }
 
-  githublog(): void {
-  try {
-    this.account.createOAuth2Session(
-      OAuthProvider.Github, // Use OAuthProvider.Github instead of "github"
-      `${process.env.NEXT_PUBLIC_APPURL}/login/success`,
-      `${process.env.NEXT_PUBLIC_APPURL}/login/failure`
-    );
-    this.getCurUser();
-  } catch (error) {
-    console.log(error);
-    }
-  }
-
-  
-
-  getCurUser(): void {
+  async githubLogin(): Promise<void> {
     try {
-      this.account
-        .get()
-        .then((res) => {
-          this.user = res;
-          localStorage.setItem("userInfo", JSON.stringify(this.user));
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+      await this.account.createOAuth2Session(
+        "github",
+        `${process.env.NEXT_PUBLIC_APPURL}/login/success`,
+        `${process.env.NEXT_PUBLIC_APPURL}/login/failure`
+      );
+      await this.getCurUser();
     } catch (error) {
-      console.log(error);
+      console.error("GitHub login error:", error);
     }
   }
 
-  emailSignUp(name: string, email: string, password: string): void {
+  async getCurUser(): Promise<void> {
     try {
-      this.account.create(ID.unique(), email, password, name);
+      const user = await this.account.get();
+      this.user = user;
+      localStorage.setItem("userInfo", JSON.stringify(this.user));
     } catch (error) {
-      console.log(error);
+      console.error("Error getting current user:", error);
     }
   }
 
-  emailLogin(email: string, password: string): Promise<Models.Session> {
+  async emailSignUp(name: string, email: string, password: string): Promise<void> {
+    try {
+      await this.account.create(ID.unique(), email, password, name);
+    } catch (error) {
+      console.error("Email sign-up error:", error);
+    }
+  }
+
+  async emailLogin(email: string, password: string): Promise<Models.Session> {
     return this.account.createSession(email, password);
   }
 
-  signOut(id: string): boolean {
+  async signOut(id: string): Promise<boolean> {
     try {
-      this.account.deleteSession(id);
+      await this.account.deleteSession(id);
       return true;
     } catch (error) {
-      console.log(error);
+      console.error("Sign-out error:", error);
       return false;
     }
   }
 
-  magicUrlLogin(email: string): void {
-    this.account.createMagicURLToken(
-      ID.unique(),
-      email,
-      `${process.env.NEXT_PUBLIC_APPURL}/login/sucess`
-    );
-    this.getCurUser();
+  async magicUrlLogin(email: string): Promise<void> {
+    try {
+      await this.account.createMagicURLToken(
+        ID.unique(),
+        email,
+        `${process.env.NEXT_PUBLIC_APPURL}/login/success`
+      );
+      await this.getCurUser();
+    } catch (error) {
+      console.error("Magic URL login error:", error);
+    }
   }
 
-  createEvent(
+  async createEvent(
     eventname: string,
     description: string,
     banner: File,
@@ -163,57 +154,53 @@ class AppwriteConfig {
     price: number,
     tech: string,
     agenda: string,
-    sponsor: Sponsors[],
+    sponsors: Sponsors[],
     approval: string,
     twitter: string,
     website: string,
     linkedin: string,
     instagram: string
-  ): Promise<String> {
+  ): Promise<string> {
     try {
-      this.storage
-        .createFile(this.bannerBucketId, ID.unique(), banner)
-        .then((res) => {
-          this.databases
-            .createDocument(this.databaseId, this.activeCollId, ID.unique(), {
-              eventname: eventname,
-              description: description,
-              url: `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${this.bannerBucketId}/files/${res.$id}/view?project=${process.env.NEXT_PUBLIC_PROJECTID}&mode=admin`,
-              hostname: hostname,
-              eventdate: eventdate,
-              email: email,
-              country: country,
-              address: address,
-              city: city,
-              state: state,
-              postal: postal,
-              audience: audience,
-              type: type,
-              attendees: attendees,
-              price: price,
-              tech: tech,
-              agenda: agenda,
-              approval: approval,
-              created: JSON.parse(localStorage.getItem("userInfo") || "{}").$id,
-              twitter: twitter,
-              website: website,
-              linkedin: linkedin,
-              instagram: instagram,
-              registrations: [],
-            })
-            .then((res) => {
-              const serverConfig = new ServerConfig();
-              serverConfig.createRegColl(res.$id, eventname);
-              serverConfig.createSponColl(res.$id, eventname, sponsor, JSON.parse(localStorage.getItem("userInfo") || "{}").$id);
-              return Promise.resolve("sucess");
-            });
-        });
+      const fileRes = await this.storage.createFile(this.bannerBucketId, ID.unique(), banner);
+
+      const docRes = await this.databases.createDocument(this.databaseId, this.activeCollId, ID.unique(), {
+        eventname,
+        description,
+        url: `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${this.bannerBucketId}/files/${fileRes.$id}/view?project=${process.env.NEXT_PUBLIC_PROJECTID}&mode=admin`,
+        hostname,
+        eventdate,
+        email,
+        country,
+        address,
+        city,
+        state,
+        postal,
+        audience,
+        type,
+        attendees,
+        price,
+        tech,
+        agenda,
+        approval,
+        created: JSON.parse(localStorage.getItem("userInfo") || "{}").$id,
+        twitter,
+        website,
+        linkedin,
+        instagram,
+        registrations: [],
+      });
+
+      const serverConfig = new ServerConfig();
+      await serverConfig.createRegColl(docRes.$id, eventname);
+      await serverConfig.createSponColl(docRes.$id, eventname, sponsors, JSON.parse(localStorage.getItem("userInfo") || "{}").$id);
+
+      return "success";
     } catch (error) {
-      console.log("error block 1");
+      console.error("Error creating event:", error);
       throw error;
     }
-    return Promise.resolve("sucess");
   }
 }
 
-export {AppwriteConfig, ServerConfig};
+export { AppwriteConfig, ServerConfig };
